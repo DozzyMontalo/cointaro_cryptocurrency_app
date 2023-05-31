@@ -1,0 +1,11 @@
+
+POST  http://localhost:3000/admin/new
+Content-Type: application/json
+
+{    "first_name": "Tarz",
+     "last_name": "Okani",
+     "phone_number": "07065067835",
+     "gender": "male",
+     "address": "5 tourist road"
+    
+}

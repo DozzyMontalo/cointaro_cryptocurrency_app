@@ -75,10 +75,7 @@ router.post("/send", auth, async (req, res) => {
         return res.status(404).send("Admin not found.");
       }
       //add the fees to admin's balance
-      await admin.setBalance(
-        token._id,
-        admin.getBalance(token._id).value + fees
-      );
+      await admin.setBalance(token._id, admin.getBalance(token._id) + fees);
     } catch (error) {
       console.error("Error finding admin:", error);
       return res.status(500).send("An error occurred while finding the admin.");

@@ -5,11 +5,11 @@ const Schema = mongoose.Schema;
 const transactionSchema = new Schema(
   {
     sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    recipient: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    recipient: { type: Schema.Types.ObjectId, ref: "User", required: false },
     coin: { type: Schema.Types.ObjectId, ref: "Token", required: true },
     walletAddress: {
       type: String,
-      required: true,
+      required: false,
     },
     network: {
       type: String,
@@ -23,9 +23,14 @@ const transactionSchema = new Schema(
       type: Number,
       default: 0,
     },
+    type: {
+      type: String,
+      required: false,
+      enum: ["buy", "sell"],
+    },
     blockNumber: {
       type: Number,
-      required: true,
+      required: false,
     },
     status: {
       type: String,

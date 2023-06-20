@@ -5,8 +5,7 @@ const Schema = mongoose.Schema;
 const notificationSchema = new Schema({
   type: {
     type: String,
-    required: true,
-    enum: ["referral", "add others here"],
+    required: false,
   },
   message: {
     type: String,

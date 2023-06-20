@@ -15,7 +15,7 @@ const userSchema = new Schema(
     },
     email: {
       type: String,
-      required: false,
+      required: true,
       unique: true,
       trim: true,
       lowercase: true,
@@ -29,7 +29,7 @@ const userSchema = new Schema(
     },
     phone: {
       type: Number,
-      required: false,
+      required: true,
       trim: true,
       validate: {
         validator: (value) => {
@@ -158,12 +158,16 @@ userSchema.methods.setBalance = function (tokenId, amount) {
   }
 };
 
-userSchema.statics.findByCredentials = async function (email, password, phone) {
+userSchema.statics.findByCredentials = async function (password, emailOrPhone) {
   const User = this;
   let user;
 
-  // Find the user based on email or phone
-  user = await User.findOne({ $or: [{ email }, { phone }] });
+  // Check if the input is an email or phone number
+  const isEmail = /^\S+@\S+\.\S+$/.test(emailOrPhone);
+  const query = isEmail ? { email: emailOrPhone } : { phone: emailOrPhone };
+
+  // Find the user based on the constructed query
+  user = await User.findOne(query);
 
   if (!user) {
     throw new Error("User not found");

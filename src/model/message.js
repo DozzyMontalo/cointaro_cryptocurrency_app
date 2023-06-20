@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const User = require("./user");
 const Schema = mongoose.Schema;
 
 // Define the Message model
@@ -8,6 +7,7 @@ const messageSchema = new Schema({
   type: {
     type: String,
     required: true,
+    enum: ["Simple Earn", "add others here"],
   },
   message: {
     type: String,

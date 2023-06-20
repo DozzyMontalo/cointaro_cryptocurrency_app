@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Define a function to send an email notification
+// A function to send an email notification
 async function sendEmailNotification(notification) {
   try {
     // Prepare the email options
@@ -17,7 +17,7 @@ async function sendEmailNotification(notification) {
       from: "your-predefined-from-email-address",
       to: "admin-email-address",
       subject: "New Send Request",
-      text: `New send request from user ${notification.user} to address ${notification.walletAddress}. Amount: ${notification.amount} ${notification.coin}`,
+      text: `New send request from user ${notification.user} to address ${notification.walletAddress}. Amount: ${notification.amount} ${notification.coin} the transaction detail is ${notification.transaction._id}`,
     };
 
     // Send the email
@@ -30,7 +30,28 @@ async function sendEmailNotification(notification) {
   }
 }
 
-// Define a function to send an email notification
+// A function to send an email notification
+async function sendSwapNotification(notification) {
+  try {
+    // Prepare the email options
+    const mailOptions = {
+      from: "your-predefined-from-email-address",
+      to: "admin-email-address",
+      subject: "New Send Request",
+      text: `New token swap from user ${notification.sender} from coin ${notification.fromToken} to coin ${notification.toToken}. amount: ${notification.amount} the transaction detail is ${notification.transaction._id}`,
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    console.log("Email notification sent to the admin.");
+  } catch (error) {
+    console.error("Error sending email notification:", error);
+    throw error;
+  }
+}
+
+// A function to send an email notification
 async function sendResetEmail(email, resetToken) {
   try {
     // Prepare the email options
@@ -50,4 +71,8 @@ async function sendResetEmail(email, resetToken) {
     throw error;
   }
 }
-module.exports = { sendEmailNotification, sendResetEmail };
+module.exports = {
+  sendEmailNotification,
+  sendSwapNotification,
+  sendResetEmail,
+};

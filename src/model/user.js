@@ -15,7 +15,7 @@ const userSchema = new Schema(
     },
     email: {
       type: String,
-      required: true,
+      required: false,
       unique: true,
       trim: true,
       lowercase: true,
@@ -29,7 +29,7 @@ const userSchema = new Schema(
     },
     phone: {
       type: Number,
-      required: true,
+      required: false,
       trim: true,
       validate: {
         validator: (value) => {
@@ -52,7 +52,7 @@ const userSchema = new Schema(
         },
       },
     },
-    roles: {
+    role: {
       type: String,
       required: true,
       enum: ["admin", "read-only"],
@@ -66,7 +66,7 @@ const userSchema = new Schema(
     },
     walletAddress: {
       type: String,
-      required: true,
+      required: false, //false just for testing
     },
     balances: [{ type: Schema.Types.ObjectId, ref: "Token" }],
     transactions: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
@@ -139,7 +139,8 @@ userSchema.methods.getUserBalance = async (coin) => {
 };
 //methods for manipulating the balances field
 userSchema.methods.hasBalance = function (tokenId) {
-  return this.balances.some((balance) => balance.equals(tokenId));
+  const user = this;
+  return user.balances.some((balance) => balance.equals(tokenId));
 };
 
 userSchema.methods.getBalance = function (tokenId) {

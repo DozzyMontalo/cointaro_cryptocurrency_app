@@ -8,9 +8,7 @@ const auth = async (req, res, next) => {
     const user = await User.findOne({
       _id: decoded._id,
       "tokens.token": token,
-    })
-      .populate("balances")
-      .populate("notifications");
+    });
 
     if (!user) {
       throw new Error();
@@ -24,6 +22,18 @@ const auth = async (req, res, next) => {
   }
 };
 
+// Middleware for API authentication
+const apiAuth = (req, res, next) => {
+  const { api_key, api_secret } = req.body;
+
+  // Check if the provided API key and secret match the expected values
+  if (api_key === apiKey && api_secret === apiSecret) {
+    next(); // Proceed to the next middleware or route
+  } else {
+    res.status(401).json({ error: "Unauthorized" });
+  }
+};
+
 const isAdmin = (req, res, next) => {
   if (req.user && req.user.roles === "admin") {
     next();
@@ -32,4 +42,4 @@ const isAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { auth, isAdmin };
+module.exports = { auth, isAdmin, apiAuth };

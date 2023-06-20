@@ -1,6 +1,12 @@
 const User = require("../model/user");
 const Notification = require("../model/notification");
 
+//To get the form for creating a new user
+const userCreateGet = async (req, res) => {
+  // Render the form here
+  res.render("createUserForm");
+};
+
 //Create user callback function
 const userCreate = async (req, res) => {
   const { name, email, phone, password, referralCode } = req.body;
@@ -29,6 +35,12 @@ const userCreate = async (req, res) => {
   } catch (error) {
     res.status(400).send(error.message);
   }
+};
+
+//To get form for user login
+const userLoginGet = async (req, res) => {
+  // Render the form here
+  res.render("userLoginForm");
 };
 
 //userLogin callback fuction
@@ -157,7 +169,9 @@ async function sendReferralNotification(referralCode) {
 }
 
 module.exports = {
+  userCreateGet,
   userCreate,
+  userLoginGet,
   userLogin,
   userProfile,
   userLogout,

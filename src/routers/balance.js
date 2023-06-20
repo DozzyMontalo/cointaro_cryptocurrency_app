@@ -3,7 +3,9 @@ const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const router = new express.Router();
 
+//Route for getting the balance of all cryptocurrencies owned by a user
 router.get("/balance", auth, async (req, res) => {
+  const user = req.user; // Retrieve the user from the auth
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
@@ -16,8 +18,6 @@ router.get("/balance", auth, async (req, res) => {
     );
 
     const tokenPrices = response.data;
-
-    const user = req.user; // Retrieve the user from the auth
 
     const tokens = user.balances.map((token) => {
       const tokenPrice = tokenPrices[token.name.toLowerCase()];
@@ -45,9 +45,10 @@ router.get("/balance", auth, async (req, res) => {
   }
 });
 
+//Route for Buy and Sell transactions
 router.post("/transaction", auth, async (req, res) => {
   const { tokenName, amount, type } = req.body;
-
+  const user = req.user; // Retrieve the user from auth
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
@@ -60,8 +61,6 @@ router.post("/transaction", auth, async (req, res) => {
     );
 
     // const tokenPrice = response.data[tokenName.toLowerCase()].usd; *until needed
-
-    const user = req.user; // Retrieve the user from auth
 
     // Find the token in the user's balances or add a new token if it doesn't exist
     const tokenIndex = user.balances.findIndex(
@@ -85,5 +84,19 @@ router.post("/transaction", auth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch token price" });
   }
 });
+
+//for the chart implementation, you can use the total balance router above, which uses coinGecko api OR you twist up
+//things to you taste by using the commented router below
+
+// const tokenBalances = [
+//   { name: "BTC", balance: 10, color: "rgba(255, 99, 132, 0.6)" },
+//   { name: "BUSD", balance: 20, color: "rgba(54, 162, 235, 0.6)" },
+//   { name: "ETH", balance: 15, color: "rgba(255, 206, 86, 0.6)" },
+//   { name: "BNB", balance: 5, color: "rgba(75, 192, 192, 0.6)" },
+// ];
+
+// router.get("/token-balances", (req, res) => {
+//   res.json(tokenBalances);
+// });
 
 module.exports = router;

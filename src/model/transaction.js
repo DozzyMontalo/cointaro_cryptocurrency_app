@@ -13,11 +13,23 @@ const transactionSchema = new Schema(
     },
     network: {
       type: String,
-      required: true,
+      default: "cointaro",
     },
     amount: {
       type: Number,
       required: true,
+    },
+    fee: {
+      type: Number,
+      default: 0,
+    },
+    blockNumber: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      default: "pending",
     },
   },
   {

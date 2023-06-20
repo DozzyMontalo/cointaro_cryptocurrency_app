@@ -6,7 +6,7 @@ const notificationSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum: [referral, "add others here"],
+    enum: ["referral", "add others here"],
   },
   message: {
     type: String,

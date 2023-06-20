@@ -5,7 +5,7 @@ const Notification = require("../model/notification");
 const { auth } = require("../middleware/auth");
 
 router.get("/messages/unread", auth, async (req, res) => {
-  const userId = req.user._id; // Assuming authenticated user's ID is stored in req.user._id
+  const userId = req.user._id;
 
   try {
     const unreadMessages = await Message.find({ user: userId, isRead: false });
@@ -20,7 +20,7 @@ router.get("/messages/unread", auth, async (req, res) => {
 });
 
 router.put("/messages/mark-as-read", auth, async (req, res) => {
-  const userId = req.user._id; // Assuming authenticated user's ID is stored in req.user._id
+  const userId = req.user._id;
 
   try {
     await Message.updateMany(
@@ -37,9 +37,7 @@ router.put("/messages/mark-as-read", auth, async (req, res) => {
   }
 });
 
-//from recent query
-
-app.get("/notifications/unread", auth, async (req, res) => {
+router.get("/notifications/unread", auth, async (req, res) => {
   try {
     // Fetch the logged-in user
     const user = req.user;
@@ -56,7 +54,7 @@ app.get("/notifications/unread", auth, async (req, res) => {
   }
 });
 
-app.patch("/notifications/:id/read", auth, async (req, res) => {
+router.patch("/notifications/:id/read", auth, async (req, res) => {
   try {
     // Fetch the logged-in user
     const user = req.user;

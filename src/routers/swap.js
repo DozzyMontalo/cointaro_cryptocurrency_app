@@ -31,6 +31,11 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
   const { fromToken, toToken, amount, walletAddress } = req.body;
   const user = req.user;
 
+  //input validation
+  if (!fromToken || !toToken || !walletAddress || !amount) {
+    return res.status(400).send("Please fill in all the required fields.");
+  }
+
   // Send a notification to the admin
   const adminNotification = {
     user: user._id,
@@ -42,7 +47,6 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
   };
 
   try {
-    const admin = await User.findOne({ role: admin });
     // Perform the swap with Changelly API
     const response = await axios.post(`${CHANGELLY_API_URL}/transactions`, {
       api_key: apiKey,
@@ -74,17 +78,35 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
 
     const fees = calculateTotalAmount(amount) - amount;
 
+    try {
+      const admin = await User.findOne({ role: admin });
+      if (!admin) {
+        return res.status(404).send("Admin not found.");
+      }
+    } catch (error) {
+      console.error("Error getting the admin:", error.message);
+      throw error;
+    }
+
     // Add the swapped amount to the "TO" token balance
     const toTokenBalanceIndex = user.balances.findIndex(
       (balance) => balance.token === toToken
     );
     if (toTokenBalanceIndex === -1) {
       user.balances.push({ token: toToken, value: amount });
-      admin.balances[toTokenBalanceIndex].value += fees;
     } else {
       user.balances[toTokenBalanceIndex].value += amount;
-      admin.balances[toTokenBalanceIndex].value += fees;
     }
+
+    await user.save(); // Save the updated user to the database
+
+    //Add the deducted fees to admin's token balance
+    await admin.setBalance(
+      fromToken._id,
+      admin.getBalance(fromToken._id) + fees
+    );
+
+    await admin.save(); // Update the admins's balance in the database
 
     // Return the updated balances
     res.json({ balances: user.balances });

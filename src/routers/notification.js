@@ -4,6 +4,7 @@ const Message = require("../model/message");
 const Notification = require("../model/notification");
 const { auth } = require("../middleware/auth");
 
+//for user to get unread messages from admin
 router.get("/messages/unread", auth, async (req, res) => {
   const userId = req.user._id;
 
@@ -19,6 +20,7 @@ router.get("/messages/unread", auth, async (req, res) => {
   }
 });
 
+//To mark opened messages by user as "read"
 router.put("/messages/mark-as-read", auth, async (req, res) => {
   const userId = req.user._id;
 
@@ -37,6 +39,7 @@ router.put("/messages/mark-as-read", auth, async (req, res) => {
   }
 });
 
+//for user to get unread notifications
 router.get("/notifications/unread", auth, async (req, res) => {
   try {
     // Fetch the logged-in user
@@ -54,6 +57,7 @@ router.get("/notifications/unread", auth, async (req, res) => {
   }
 });
 
+//To mark opened notification by user as "read"
 router.patch("/notifications/:id/read", auth, async (req, res) => {
   try {
     // Fetch the logged-in user

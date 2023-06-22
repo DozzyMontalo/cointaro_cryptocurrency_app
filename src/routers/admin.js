@@ -79,7 +79,7 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
 });
 
 //Router for getting incomplete transactions
-router.get("/incompleteTransaction", async (req, res) => {
+router.get("/incompleteTransaction", isAdmin, async (req, res) => {
   try {
     const transactions = await Transaction.find({ status: "pending" })
       .populate("sender", "name")

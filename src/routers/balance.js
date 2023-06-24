@@ -1,7 +1,10 @@
 const express = require("express");
+const Token = require("../model/token");
 const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const router = new express.Router();
+const tokenIds = await Token.find().distinct("_id");
+const tokenIdsString = tokenIds.join(",");
 
 //Route for getting the balance of all cryptocurrencies owned by a user
 router.get("/balance", auth, async (req, res) => {
@@ -11,7 +14,7 @@ router.get("/balance", auth, async (req, res) => {
       "https://api.coingecko.com/api/v3/simple/price",
       {
         params: {
-          ids: "bitcoin,ethereum,bitcoin-cash,busd",
+          ids: tokenIdsString,
           vs_currencies: "usd",
         },
       }
@@ -46,9 +49,14 @@ router.get("/balance", auth, async (req, res) => {
 });
 
 //Route for Buy and Sell transactions
+//Note that this router might not give the desired output, since it's not within descriptions
 router.post("/transaction", auth, async (req, res) => {
   const { tokenName, amount, type } = req.body;
   const user = req.user; // Retrieve the user from auth
+
+  if (!tokenName || !amount || type) {
+    return res.status(400).send("Please fill in all the required fields.");
+  }
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
@@ -60,17 +68,23 @@ router.post("/transaction", auth, async (req, res) => {
       }
     );
 
-    // const tokenPrice = response.data[tokenName.toLowerCase()].usd; *until needed
+    const tokenPrice = response.data[tokenName.toLowerCase()].usd;
 
     // Find the token in the user's balances or add a new token if it doesn't exist
     const tokenIndex = user.balances.findIndex(
       (token) => token.name.toLowerCase() === tokenName.toLowerCase()
     );
+    const coin = await user.getBalance(tokenName._id); //since the intended balance for this transaction is in usd you have to consider modifying this line
+    let userBalance = response.data[coin].usd;
+    const newTokenValue = amount / tokenPrice;
+
     if (tokenIndex !== -1) {
-      if (type === "buy") {
-        user.balances[tokenIndex].value += amount;
-      } else if (type === "sell") {
-        user.balances[tokenIndex].value -= amount;
+      if (type === "buy" && userBalance > amount) {
+        userBalance -= amount;
+        await user.setBalance(tokenName.id, coin + newTokenValue);
+      } else if (type === "sell" && userBalance >= amount) {
+        userBalance += amount;
+        await user.setBalance(tokenName.id, coin - newTokenValue);
       }
     } else {
       user.balances.push({ name: tokenName, value: amount });
@@ -86,7 +100,7 @@ router.post("/transaction", auth, async (req, res) => {
 });
 
 //for the chart implementation, you can use the total balance router above, which uses coinGecko api OR you twist up
-//things to you taste by using the commented router below
+//things to your taste by using the commented router below
 
 // const tokenBalances = [
 //   { name: "BTC", balance: 10, color: "rgba(255, 99, 132, 0.6)" },

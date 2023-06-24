@@ -93,7 +93,7 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
       (balance) => balance.token === toToken
     );
     if (toTokenBalanceIndex === -1) {
-      user.balances.push({ token: toToken, value: amount });
+      user.balances.push({ name: toToken, value: amount });
     } else {
       user.balances[toTokenBalanceIndex].value += amount;
     }

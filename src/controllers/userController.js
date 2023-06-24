@@ -31,6 +31,7 @@ const userCreate = async (req, res) => {
   try {
     await user.save();
     const token = await user.generateAuthToken();
+    await user.addTokens();
     res.status(201).send({ user, token });
   } catch (error) {
     res.status(400).send(error.message);

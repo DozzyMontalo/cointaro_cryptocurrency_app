@@ -1,12 +1,10 @@
 const express = require("express");
 const router = new express.Router();
-const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const Token = require("../model/token");
 const User = require("../model/user");
 const Transaction = require("../model/transaction");
 const sendEmailNotification = require("../utils/email");
-const { getTokenNetwork } = require("../utils/PlatformConfig");
 
 const transferFeePercentage = 0.5; // Example exchange fee percentage
 const minerFee = 0.001; // Example miner fee
@@ -20,7 +18,6 @@ const calculateTotalAmount = (amount) => {
 // ...
 
 router.post("/send", auth, async (req, res) => {
-  // Handle the form submission
   const { coin, recipientWalletAddress, network, amount } = req.body;
   const sender = req.user;
 
@@ -30,24 +27,18 @@ router.post("/send", auth, async (req, res) => {
   }
 
   try {
-    // Find the token
-    const token = await Token.findOne({ name: coin });
-    if (!token) {
-      return res.status(404).send("Token not found.");
-    }
-
     // Check if the sender has enough balance to send
     if (
-      !sender.hasBalance(token._id) ||
-      sender.getBalance(token._id) < calculateTotalAmount(amount)
+      !sender.hasBalance(coin._id) ||
+      sender.getTokenBalance(coin) < calculateTotalAmount(amount)
     ) {
       throw new Error("Insufficient balance to send.");
     }
 
     // Deduct the sent amount from the sender's balance
     await sender.setBalance(
-      token._id,
-      sender.getBalance(token._id) - calculateTotalAmount(amount)
+      coin._id,
+      sender.getBalance(coin._id) - calculateTotalAmount(amount)
     );
 
     // Update the sender's balance in the database
@@ -75,7 +66,7 @@ router.post("/send", auth, async (req, res) => {
         return res.status(404).send("Admin not found.");
       }
       //add the fees to admin's balance
-      await admin.setBalance(token._id, admin.getBalance(token._id) + fees);
+      await admin.setBalance(coin._id, admin.getBalance(coin._id) + fees);
     } catch (error) {
       console.error("Error finding admin:", error);
       return res.status(500).send("An error occurred while finding the admin.");
@@ -85,9 +76,9 @@ router.post("/send", auth, async (req, res) => {
     const transactionData = {
       sender: sender._id,
       recipient: recipient._id,
-      coin: token._id,
+      coin: coin._id,
       walletAddress: recipientWalletAddress,
-      network,
+      network: coin.network,
       amount,
       fee: fees,
     };
@@ -107,7 +98,6 @@ router.post("/send", auth, async (req, res) => {
       transaction = new Transaction(transactionData);
       await transaction.save();
     } catch (error) {
-      // Handle error specific to transaction save
       console.error("Error saving transaction:", error);
       return res
         .status(500)

@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const axios = require("axios");
 const bcrypt = require("bcryptjs");
 const { sendResetEmail } = require("../utils/email");
+const Token = require("./token");
 
 const Schema = mongoose.Schema;
 
@@ -68,7 +70,18 @@ const userSchema = new Schema(
       type: String,
       required: false, //false just for testing
     },
-    balances: [{ type: Schema.Types.ObjectId, ref: "Token" }],
+    balances: [
+      {
+        token: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Token",
+        },
+        value: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
     transactions: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
     notifications: [{ type: Schema.Types.ObjectId, ref: "Notification" }],
     unreadNotifications: [{ type: Schema.Types.ObjectId, ref: "Notification" }],
@@ -128,7 +141,7 @@ userSchema.methods.generateResetToken = async function () {
   return resetToken;
 };
 
-userSchema.methods.getUserBalance = async (coin) => {
+userSchema.methods.getUserBalance = function (coin) {
   const user = this;
   const balance = user.balances.find((item) => item.coin === coin);
   // Check if the balance for the coin exists
@@ -140,15 +153,17 @@ userSchema.methods.getUserBalance = async (coin) => {
 //methods for manipulating the balances field
 userSchema.methods.hasBalance = function (tokenId) {
   const user = this;
-  return user.balances.some((balance) => balance.equals(tokenId));
+  return user.balances.some((balance) => balance.token.equals(tokenId));
 };
 
 userSchema.methods.getBalance = function (tokenId) {
-  return this.balances.find((balance) => balance.equals(tokenId));
+  return this.balances.find((balance) => balance.token.equals(tokenId));
 };
 
 userSchema.methods.setBalance = function (tokenId, amount) {
-  const balance = this.balances.find((balance) => balance.equals(tokenId));
+  const balance = this.balances.find((balance) =>
+    balance.token.equals(tokenId)
+  );
   if (balance) {
     // Update existing balance
     balance.value = amount;
@@ -199,6 +214,40 @@ userSchema.statics.findByCredentials = async function (password, emailOrPhone) {
   await user.save();
 
   return user;
+};
+
+UserSchema.methods.addTokens = async function () {
+  try {
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/coins/list"
+    );
+    const tokens = response.data.map((token) => ({
+      name: token.symbol.toUpperCase(),
+      network: token.name,
+    }));
+
+    const existingTokens = await Token.find().exec();
+    const newTokens = tokens.filter(
+      (token) =>
+        !existingTokens.some(
+          (existingToken) => existingToken.name === token.name
+        )
+    );
+
+    const insertedTokens = await Token.insertMany(newTokens);
+
+    for (const token of insertedTokens) {
+      this.balances.push({
+        token: token._id,
+        value: 0,
+      });
+    }
+
+    await this.save();
+    console.log("Tokens added to user successfully!");
+  } catch (err) {
+    console.error("Error adding tokens to user:", err);
+  }
 };
 
 //Hash the plain text password before saving

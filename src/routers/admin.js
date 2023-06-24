@@ -2,7 +2,6 @@ const express = require("express");
 const axios = require("axios");
 const router = new express.Router();
 const User = require("../model/user");
-const Token = require("../model/token");
 const Message = require("../model/message");
 const Transaction = require("../model/transaction");
 const { auth, isAdmin } = require("../middleware/auth");
@@ -114,7 +113,6 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
   }
 });
 
-//The functions below are helper functions
 // Transfer coins within the same platform
 async function sendWithinPlatform(
   coin,
@@ -123,13 +121,10 @@ async function sendWithinPlatform(
   sender
 ) {
   try {
-    // Find the token
-    const token = await Token.findOne({ name: coin });
-
     // Check if the sender has enough balance to send
     if (
-      !sender.hasBalance(token._id) ||
-      sender.getBalance(token._id).value < amount
+      !sender.hasBalance(coin._id) ||
+      sender.getBalance(coin._id).value < amount
     ) {
       throw new Error("Insufficient balance to send");
     }
@@ -144,8 +139,8 @@ async function sendWithinPlatform(
     }
     // Update the recipient's balance
     await recipient.setBalance(
-      token._id,
-      (recipient.getBalance(token._id) || { value: 0 }).value + amount
+      coin._id,
+      (recipient.getBalance(coin._id) || { value: 0 }).value + amount
     );
 
     // Update the recipient's balance in the database
@@ -165,12 +160,10 @@ async function sendWithinPlatform(
 // Transfer coins to recipient's wallet on the specified platform
 async function transferToAnotherPlatform(coin, amount, network, walletAddress) {
   try {
-    const token = await Token.findOne({ name: coin });
-
     // Check if the sender has enough balance to send
     if (
-      !sender.hasBalance(token._id) ||
-      sender.getBalance(token._id).value < amount
+      !sender.hasBalance(coin._id) ||
+      sender.getBalance(coin._id).value < amount
     ) {
       throw new Error("Insufficient balance to send");
     }

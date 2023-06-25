@@ -30,7 +30,7 @@ router.post("/send", auth, async (req, res) => {
     // Check if the sender has enough balance to send
     if (
       !sender.hasBalance(coin._id) ||
-      sender.getTokenBalance(coin) < calculateTotalAmount(amount)
+      sender.getUserBalance(coin) < calculateTotalAmount(amount)
     ) {
       throw new Error("Insufficient balance to send.");
     }

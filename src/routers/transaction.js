@@ -169,7 +169,7 @@ router.get("/transaction-history", auth, async (req, res) => {
     // Find all transactions where the user is either the sender or the recipient
     const transactions = await Transaction.find({
       $or: [{ sender: userId }, { recipient: userId }],
-    }).populate("coin");
+    }).populate("balances");
 
     res.json(transactions);
   } catch (error) {

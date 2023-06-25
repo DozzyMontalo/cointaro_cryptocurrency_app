@@ -41,16 +41,29 @@ router.post("/admin/messages", isAdmin, async (req, res) => {
 router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
   const { coin, amount, network, walletAddress, senderId } = req.body;
 
-  try {
-    // Get the sender's user account
-    const sender = await User.findById(senderId);
-    if (!sender) {
-      throw new Error("Sender user not found");
-    }
+  // input validation
+  if (!coin || !amount || !network || !walletAddress) {
+    throw new Error("Please provide all the required information.");
+  }
 
-    // Perform input validation
-    if (!coin || !amount || !network || !walletAddress) {
-      throw new Error("Please provide all the required information.");
+  try {
+    try {
+      // Get the sender's user account
+      const sender = await User.findById(senderId);
+      if (!sender) {
+        throw new Error("Sender user not found");
+      }
+
+      // Check if the sender has enough balance to send
+      if (
+        !sender.hasBalance(coin._id) ||
+        sender.getBalance(coin._id).value < amount
+      ) {
+        throw new Error("Insufficient balance to send");
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("An error occurred while validating the sender.");
     }
 
     // Transfer the coins to the recipient's wallet address
@@ -114,24 +127,11 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
 });
 
 // Transfer coins within the same platform
-async function sendWithinPlatform(
-  coin,
-  amount,
-  recipientWalletAddress,
-  sender
-) {
+async function sendWithinPlatform(coin, amount, walletAddress) {
   try {
-    // Check if the sender has enough balance to send
-    if (
-      !sender.hasBalance(coin._id) ||
-      sender.getBalance(coin._id).value < amount
-    ) {
-      throw new Error("Insufficient balance to send");
-    }
-
     // Find the recipient user based on the wallet address
     const recipient = await User.findOne({
-      walletAddress: recipientWalletAddress,
+      walletAddress,
     }).populate("balances.token"); // Populate the balances field with Token documents
 
     if (!recipient) {
@@ -147,7 +147,7 @@ async function sendWithinPlatform(
     await recipient.save();
 
     console.log(
-      `Transfer of ${amount} ${coin} to ${recipientWalletAddress} completed successfully.`
+      `Transfer of ${amount} ${coin} to ${walletAddress} completed successfully.`
     );
   } catch (error) {
     console.error("Error transferring within the same platform:", error);
@@ -158,16 +158,14 @@ async function sendWithinPlatform(
 //External
 
 // Transfer coins to recipient's wallet on the specified platform
-async function transferToAnotherPlatform(coin, amount, network, walletAddress) {
+async function transferToAnotherPlatform(
+  coin,
+  amount,
+  network,
+  sender,
+  walletAddress
+) {
   try {
-    // Check if the sender has enough balance to send
-    if (
-      !sender.hasBalance(coin._id) ||
-      sender.getBalance(coin._id).value < amount
-    ) {
-      throw new Error("Insufficient balance to send");
-    }
-
     // Get the API URL for the specified network
     const platformApiUrl = getPlatformApiUrl(network);
     if (!platformApiUrl) {

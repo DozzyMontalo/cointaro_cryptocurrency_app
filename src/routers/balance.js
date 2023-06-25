@@ -6,7 +6,7 @@ const router = new express.Router();
 const tokenIds = await Token.find().distinct("_id");
 const tokenIdsString = tokenIds.join(",");
 
-//Route for getting the balance of all cryptocurrencies owned by a user
+//Route for getting the initial balance of all cryptocurrencies owned by a user
 router.get("/balance", auth, async (req, res) => {
   const user = req.user; // Retrieve the user from the auth
   try {
@@ -68,26 +68,28 @@ router.post("/transaction", auth, async (req, res) => {
       }
     );
 
-    const tokenPrice = response.data[tokenName.toLowerCase()].usd;
+    const usdValue = response.data[tokenName.toLowerCase()].usd;
 
     // Find the token in the user's balances or add a new token if it doesn't exist
     const tokenIndex = user.balances.findIndex(
       (token) => token.name.toLowerCase() === tokenName.toLowerCase()
     );
-    const coin = await user.getBalance(tokenName._id); //since the intended balance for this transaction is in usd you have to consider modifying this line
-    let userBalance = response.data[coin].usd;
-    const newTokenValue = amount / tokenPrice;
+
+    const coinBalance = await user.getUserBalance(tokenName); // Use getUserBalance with coin argument
+    const convertedValue = coinBalance * usdValue;
+
+    const newTokenValue = amount / usdValue;
 
     if (tokenIndex !== -1) {
-      if (type === "buy" && userBalance > amount) {
-        userBalance -= amount;
-        await user.setBalance(tokenName.id, coin + newTokenValue);
-      } else if (type === "sell" && userBalance >= amount) {
-        userBalance += amount;
-        await user.setBalance(tokenName.id, coin - newTokenValue);
+      if (type === "buy" && convertedValue > amount) {
+        convertedValue -= amount;
+        await user.setBalance(tokenName.id, coinBalance + newTokenValue);
+      } else if (type === "sell" && convertedValue >= amount) {
+        convertedValue += amount;
+        await user.setBalance(tokenName.id, coinBalance - newTokenValue);
       }
     } else {
-      user.balances.push({ name: tokenName, value: amount });
+      user.balances.push({ token: tokenName, value: amount });
     }
 
     await user.save(); // Save the updated user to the database
@@ -97,6 +99,12 @@ router.post("/transaction", auth, async (req, res) => {
     console.error("Error fetching token price:", error);
     res.status(500).json({ error: "Failed to fetch token price" });
   }
+});
+
+// Endpoint to retrieve the available balances
+router.get("/balances", auth, (req, res) => {
+  const user = req.user;
+  res.json({ balances: user.balances });
 });
 
 //for the chart implementation, you can use the total balance router above, which uses coinGecko api OR you twist up

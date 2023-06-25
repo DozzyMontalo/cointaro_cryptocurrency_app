@@ -93,7 +93,7 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
       (balance) => balance.token === toToken
     );
     if (toTokenBalanceIndex === -1) {
-      user.balances.push({ name: toToken, value: amount });
+      user.balances.push({ token: toToken, value: amount });
     } else {
       user.balances[toTokenBalanceIndex].value += amount;
     }
@@ -143,7 +143,7 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
 // Endpoint to retrieve the available balances
 router.get("/balances", auth, (req, res) => {
   const user = req.user;
-  res.json({ balances: user.balance });
+  res.json({ balances: user.balances });
 });
 
 module.exports = router;

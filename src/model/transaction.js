@@ -13,7 +13,7 @@ const transactionSchema = new Schema(
     },
     network: {
       type: String,
-      default: "ethereum",
+      default: "cointaro",
     },
     amount: {
       type: Number,

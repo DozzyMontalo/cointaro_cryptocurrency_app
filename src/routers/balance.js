@@ -3,6 +3,7 @@ const Token = require("../model/token");
 const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const router = new express.Router();
+
 const tokenIds = await Token.find().distinct("_id");
 const tokenIdsString = tokenIds.join(",");
 
@@ -54,7 +55,7 @@ router.post("/transaction", auth, async (req, res) => {
   const { tokenName, amount, type } = req.body;
   const user = req.user; // Retrieve the user from auth
 
-  if (!tokenName || !amount || type) {
+  if (!tokenName || !amount || !type) {
     return res.status(400).send("Please fill in all the required fields.");
   }
   try {
@@ -83,13 +84,13 @@ router.post("/transaction", auth, async (req, res) => {
     if (tokenIndex !== -1) {
       if (type === "buy" && convertedValue > amount) {
         convertedValue -= amount;
-        await user.setBalance(tokenName.id, coinBalance + newTokenValue);
+        await user.setBalance(tokenName._id, coinBalance + newTokenValue);
       } else if (type === "sell" && convertedValue >= amount) {
         convertedValue += amount;
-        await user.setBalance(tokenName.id, coinBalance - newTokenValue);
+        await user.setBalance(tokenName._id, coinBalance - newTokenValue);
       }
     } else {
-      user.balances.push({ token: tokenName, value: amount });
+      user.balances.push({ token: tokenName, value: 0 });
     }
 
     await user.save(); // Save the updated user to the database

@@ -76,7 +76,7 @@ router.post("/transaction", auth, async (req, res) => {
       (token) => token.name.toLowerCase() === tokenName.toLowerCase()
     );
 
-    const coinBalance = await user.getUserBalance(tokenName); // Use getUserBalance with coin argument
+    const coinBalance = await user.getUserBalance(tokenName);
     const convertedValue = coinBalance * usdValue;
 
     const newTokenValue = amount / usdValue;
@@ -90,7 +90,7 @@ router.post("/transaction", auth, async (req, res) => {
         await user.setBalance(tokenName._id, coinBalance - newTokenValue);
       }
     } else {
-      user.balances.push({ token: tokenName, value: 0 });
+      user.balances.push({ token: tokenName._id, value: 0 });
     }
 
     await user.save(); // Save the updated user to the database

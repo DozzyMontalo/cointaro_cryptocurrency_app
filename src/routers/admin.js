@@ -2,6 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const router = new express.Router();
 const User = require("../model/user");
+const Task = require("../model/task");
 const Message = require("../model/message");
 const Transaction = require("../model/transaction");
 const { auth, isAdmin } = require("../middleware/auth");
@@ -69,7 +70,7 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
     // Transfer the coins to the recipient's wallet address
     if (network === "cointaro") {
       // Transfer to recipient's wallet on the same platform
-      await sendWithinPlatform(coin, amount, walletAddress, sender);
+      await sendWithinPlatform(coin, amount, walletAddress, senderId);
     } else {
       // Transfer to recipient's wallet on another platform
       await transferToAnotherPlatform(
@@ -77,7 +78,7 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
         amount,
         network,
         walletAddress,
-        sender
+        senderId
       );
     }
 
@@ -126,6 +127,37 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
   }
 });
 
+// POST route to create a new Simple-Earn task and send it to a user
+router.post("/tasks", isAdmin, async (req, res) => {
+  const { description, recipientId } = req.body;
+
+  try {
+    // Create the new task
+    const task = new Task({
+      description,
+      owner: recipientId,
+    });
+
+    // Save the task to the database
+    await task.save();
+
+    // Create a new message to send the task to the recipient
+    const message = new Message({
+      user: recipientId,
+      type: "Simple Earn", // Set the message type
+      message: `You have been assigned a new task: ${description}`, // Set the message content
+    });
+
+    // Save the message to the database
+    await message.save();
+
+    res.status(201).json({ task, message });
+  } catch (error) {
+    console.error("Failed to create task:", error);
+    res.status(500).json({ error: "Failed to create task" });
+  }
+});
+
 // Transfer coins within the same platform
 async function sendWithinPlatform(coin, amount, walletAddress) {
   try {
@@ -162,10 +194,16 @@ async function transferToAnotherPlatform(
   coin,
   amount,
   network,
-  sender,
+  senderId,
   walletAddress
 ) {
   try {
+    const sender = await User.findById(senderId);
+    if (!sender) {
+      return res
+        .status(404)
+        .json({ success: false, error: "sender not found" });
+    }
     // Get the API URL for the specified network
     const platformApiUrl = getPlatformApiUrl(network);
     if (!platformApiUrl) {

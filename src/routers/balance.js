@@ -1,53 +1,29 @@
 const express = require("express");
-const Token = require("../model/token");
 const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const router = new express.Router();
 
-//Route for getting the initial balance of all cryptocurrencies owned by a user
-router.get("/balance", auth, async (req, res) => {
-  const user = req.user; // Retrieve the user from the auth
+//Route for getting the total balance in USD of all cryptocurrencies owned by a user
+
+router.get("/totalBalances", auth, async (req, res) => {
   try {
-    const tokenIdsString = await getTokenIdsString();
-    const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price",
-      {
-        params: {
-          ids: tokenIdsString,
-          vs_currencies: "usd",
-        },
-      }
-    );
+    const user = req.user;
+    const tokenIds = user.balances.map((balance) => balance.token._id);
 
-    const tokenPrices = response.data;
+    // Fetch token information from coinGecko API
+    const tokenData = await fetchTokenData(tokenIds);
 
-    const tokens = user.balances.map((token) => {
-      const tokenPrice = tokenPrices[token.name.toLowerCase()];
-      if (tokenPrice && tokenPrice.usd) {
-        const usdValue = token.value * tokenPrice.usd;
-        return {
-          name: token.name,
-          value: token.value,
-          usdValue,
-        };
-      }
-      return {
-        name: token.name,
-        value: token.value,
-        usdValue: 0,
-      };
-    });
+    // Calculate the total balances in USD
+    const totalBalanceUSD = calculateTotalBalanceUSD(user.balances, tokenData);
 
-    const totalBalance = tokens.reduce((acc, token) => acc + token.usdValue, 0);
-
-    res.json({ totalBalance, tokens });
+    res.json({ balances: totalBalanceUSD });
   } catch (error) {
-    console.error("Error fetching token prices:", error);
-    res.status(500).json({ error: "Failed to fetch token prices" });
+    console.error("Failed to fetch balances:", error);
+    res.status(500).json({ error: "Failed to fetch balances" });
   }
 });
 
-// Endpoint to retrieve the available balances
+// Endpoint to retrieve the respective token balances
 router.get("/balances", auth, (req, res) => {
   const user = req.user;
   res.json({ balances: user.balances });
@@ -120,16 +96,44 @@ router.post("/transaction", auth, async (req, res) => {
 //   res.json(tokenBalances);
 // });
 
-//Helper function
-async function getTokenIdsString() {
-  try {
-    const tokenIds = await Token.find().distinct("_id");
-    const tokenIdsString = tokenIds.join(",");
-    return tokenIdsString;
-  } catch (error) {
-    console.error("Error retrieving token IDs:", error);
-    throw error;
-  }
+// Helper function to fetch token data from an external API or predefined mapping
+async function fetchTokenData(tokenIds) {
+  const response = await axios.get(
+    `https://api.coingecko.com/api/v3/tokens/markets`,
+    {
+      params: {
+        ids: tokenIds.join(","),
+        vs_currency: "usd",
+      },
+    }
+  );
+
+  // Extract relevant token data from the API response
+  const tokenData = response.data.map((token) => ({
+    id: token.id,
+    name: token.name,
+    symbol: token.symbol,
+    price: token.current_price,
+  }));
+
+  return tokenData;
+}
+
+// Helper function to calculate the total balances in USD
+function calculateTotalBalanceUSD(balances, tokenData) {
+  let totalBalanceUSD = 0;
+
+  balances.forEach((balance) => {
+    const token = tokenData.find(
+      (token) => token.id === balance.token._id.toString()
+    );
+    if (token) {
+      const tokenValueUSD = balance.amount * token.price;
+      totalBalanceUSD += tokenValueUSD;
+    }
+  });
+
+  return totalBalanceUSD;
 }
 
 module.exports = router;

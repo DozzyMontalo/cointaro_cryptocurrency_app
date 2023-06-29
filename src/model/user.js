@@ -216,7 +216,7 @@ userSchema.statics.findByCredentials = async function (password, emailOrPhone) {
   return user;
 };
 
-UserSchema.methods.addTokens = async function () {
+userSchema.methods.addTokens = async function () {
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/coins/list"

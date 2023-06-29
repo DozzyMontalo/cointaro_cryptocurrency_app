@@ -4,13 +4,11 @@ const axios = require("axios");
 const { auth } = require("../middleware/auth");
 const router = new express.Router();
 
-const tokenIds = await Token.find().distinct("_id");
-const tokenIdsString = tokenIds.join(",");
-
 //Route for getting the initial balance of all cryptocurrencies owned by a user
 router.get("/balance", auth, async (req, res) => {
   const user = req.user; // Retrieve the user from the auth
   try {
+    const tokenIdsString = await getTokenIdsString();
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
       {
@@ -47,6 +45,12 @@ router.get("/balance", auth, async (req, res) => {
     console.error("Error fetching token prices:", error);
     res.status(500).json({ error: "Failed to fetch token prices" });
   }
+});
+
+// Endpoint to retrieve the available balances
+router.get("/balances", auth, (req, res) => {
+  const user = req.user;
+  res.json({ balances: user.balances });
 });
 
 //Route for Buy and Sell transactions
@@ -102,12 +106,6 @@ router.post("/transaction", auth, async (req, res) => {
   }
 });
 
-// Endpoint to retrieve the available balances
-router.get("/balances", auth, (req, res) => {
-  const user = req.user;
-  res.json({ balances: user.balances });
-});
-
 //for the chart implementation, you can use the total balance router above, which uses coinGecko api OR you twist up
 //things to your taste by using the commented router below
 
@@ -121,5 +119,17 @@ router.get("/balances", auth, (req, res) => {
 // router.get("/token-balances", (req, res) => {
 //   res.json(tokenBalances);
 // });
+
+//Helper function
+async function getTokenIdsString() {
+  try {
+    const tokenIds = await Token.find().distinct("_id");
+    const tokenIdsString = tokenIds.join(",");
+    return tokenIdsString;
+  } catch (error) {
+    console.error("Error retrieving token IDs:", error);
+    throw error;
+  }
+}
 
 module.exports = router;

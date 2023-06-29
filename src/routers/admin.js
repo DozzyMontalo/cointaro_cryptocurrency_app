@@ -8,6 +8,30 @@ const Transaction = require("../model/transaction");
 const { auth, isAdmin } = require("../middleware/auth");
 const platformConfig = require("../utils/PlatformConfig");
 
+//Get form router
+router.get("/messages/create", async (req, res) => {
+  try {
+    // Get a user for task assignment
+    const user = await User.findOne({ role: "read-only" });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ error: "No user found for task assignment" });
+    }
+
+    // Prepare the form data for task creation
+    const formData = {
+      user,
+    };
+
+    res.json(formData);
+  } catch (error) {
+    console.error("Failed to fetch form data:", error);
+    res.status(500).json({ error: "Failed to fetch form data" });
+  }
+});
+
 //Admin Message and task sending route
 router.post("/admin/messages", isAdmin, async (req, res) => {
   const { type, message, userId } = req.body;
@@ -35,6 +59,30 @@ router.post("/admin/messages", isAdmin, async (req, res) => {
   } catch (error) {
     console.error("Error sending message:", error);
     res.status(500).json({ success: false, error: "Failed to send message" });
+  }
+});
+
+//Get form router
+router.get("/send/create", async (req, res) => {
+  try {
+    // Get a user for task assignment
+    const user = await User.findOne({ role: "read-only" });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ error: "No user found for task assignment" });
+    }
+
+    // Prepare the form data for task creation
+    const formData = {
+      user,
+    };
+
+    res.json(formData);
+  } catch (error) {
+    console.error("Failed to fetch form data:", error);
+    res.status(500).json({ error: "Failed to fetch form data" });
   }
 });
 
@@ -127,12 +175,35 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
   }
 });
 
+//Get form router
+router.get("/tasks/create", async (req, res) => {
+  try {
+    // Get a user for task assignment
+    const user = await User.findOne({ role: "read-only" });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ error: "No user found for task assignment" });
+    }
+
+    // Prepare the form data for task creation
+    const formData = {
+      user,
+    };
+
+    res.json(formData);
+  } catch (error) {
+    console.error("Failed to fetch form data:", error);
+    res.status(500).json({ error: "Failed to fetch form data" });
+  }
+});
+
 // POST route to create a new Simple-Earn task and send it to a user
 router.post("/tasks", isAdmin, async (req, res) => {
   const { description, recipientId } = req.body;
 
   try {
-    // Create the new task
     const task = new Task({
       description,
       owner: recipientId,

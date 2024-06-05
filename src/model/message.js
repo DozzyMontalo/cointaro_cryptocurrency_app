@@ -9,7 +9,7 @@ const messageSchema = new Schema({
     required: true,
     enum: ["Simple Earn", "add others here"],
   },
-  message: {
+  body: {
     type: String,
     required: true,
   },

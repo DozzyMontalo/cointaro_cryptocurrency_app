@@ -7,22 +7,21 @@ const Message = require("../model/message");
 const Transaction = require("../model/transaction");
 const { auth, isAdmin } = require("../middleware/auth");
 const platformConfig = require("../utils/PlatformConfig");
+const AdminTransaction = require("../model/Admin-transaction");
 
 //Get form router
 router.get("/messages/create", async (req, res) => {
   try {
-    // Get a user for task assignment
-    const user = await User.findOne({ role: "read-only" });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ error: "No user found for task assignment" });
-    }
-
+     
+    const users = await User.find()
     // Prepare the form data for task creation
     const formData = {
-      user,
+        user: users.map(user => ({
+          id: user._id,
+        })),
+        type: "",
+        body: "",
+        timestamp: Date.now(),  
     };
 
     res.json(formData);
@@ -49,7 +48,7 @@ router.post("/admin/messages", isAdmin, async (req, res) => {
     const newMessage = new Message({
       user: userId,
       type,
-      message,
+      body,
       timestamp: new Date(),
     });
 
@@ -62,21 +61,19 @@ router.post("/admin/messages", isAdmin, async (req, res) => {
   }
 });
 
-//Get form router
-router.get("/send/create", async (req, res) => {
+//Get Transaction form
+router.get("/admin/send/create", async (req, res) => {
   try {
-    // Get a user for task assignment
-    const user = await User.findOne({ role: "read-only" });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ error: "No user found for task assignment" });
-    }
-
+    const users = await User.find()
     // Prepare the form data for task creation
     const formData = {
-      user,
+        sender: users.map(user => ({
+          id: user._id,
+        })),
+        amount: "",
+        network: "",
+        walletAddress: "",
+        coin: "",  
     };
 
     res.json(formData);
@@ -85,6 +82,7 @@ router.get("/send/create", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch form data" });
   }
 });
+
 
 //Admin route for processing of user transaction ... pls see route for status update below
 router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
@@ -119,6 +117,8 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
     if (network === "cointaro") {
       // Transfer to recipient's wallet on the same platform
       await sendWithinPlatform(coin, amount, walletAddress, senderId);
+      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId})
+      adminTransaction.save()
     } else {
       // Transfer to recipient's wallet on another platform
       await transferToAnotherPlatform(
@@ -128,6 +128,8 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
         walletAddress,
         senderId
       );
+      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId})
+      adminTransaction.save()
     }
 
     res.status(200).send("Coins transferred successfully");
@@ -175,21 +177,19 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
   }
 });
 
-//Get form router
+//Get Task form router
 router.get("/tasks/create", async (req, res) => {
   try {
-    // Get a user for task assignment
-    const user = await User.findOne({ role: "read-only" });
 
-    if (!user) {
-      return res
-        .status(404)
-        .json({ error: "No user found for task assignment" });
-    }
-
+    const users = await User.find()
     // Prepare the form data for task creation
     const formData = {
-      user,
+        description: "",
+        completed: false,
+        owner: users.map(user => ({
+          id: user._id,
+        })),
+        timestamp: Date.now(),
     };
 
     res.json(formData);
@@ -243,7 +243,7 @@ async function sendWithinPlatform(coin, amount, walletAddress) {
     // Update the recipient's balance
     await recipient.setBalance(
       coin._id,
-      (recipient.getBalance(coin._id) || { value: 0 }).value + amount
+      (recipient.getBalance(coin._id) ).value + amount
     );
 
     // Update the recipient's balance in the database

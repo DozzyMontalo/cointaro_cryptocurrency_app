@@ -11,9 +11,8 @@ const AdminTransaction = require("../model/Admin-transaction");
 
 //Get form router
 router.get("/messages/create", async (req, res) => {
+  const users = await User.find()
   try {
-     
-    const users = await User.find()
     // Prepare the form data for task creation
     const formData = {
         user: users.map(user => ({

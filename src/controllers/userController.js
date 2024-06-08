@@ -3,8 +3,20 @@ const Notification = require("../model/notification");
 
 //To get the form for creating a new user
 const userCreateGet = async (req, res) => {
-  // Render the form here
-  res.render("createUserForm");
+   // Render the form here
+   try{
+    const formData = {
+      name: "",
+      email: "",
+      phone,
+      password: "",
+      referralCode: "",
+  };
+  res.json(formData);
+  }catch(e){
+    console.error("Failed to fetch form data:", e);
+    res.status(500).json({ e: "Failed to fetch form data" });
+  }
 };
 
 //Create user callback function
@@ -41,7 +53,17 @@ const userCreate = async (req, res) => {
 //To get form for user login
 const userLoginGet = async (req, res) => {
   // Render the form here
-  res.render("userLoginForm");
+  try{
+    const formData = {
+      emai: "",
+      password: "",
+      phone,
+  };
+  res.json(formData);
+  }catch(e){
+    console.error("Failed to fetch form data:", e);
+    res.status(500).json({ e: "Failed to fetch form data" });
+  }
 };
 
 //userLogin callback fuction

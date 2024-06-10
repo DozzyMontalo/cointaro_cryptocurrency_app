@@ -6,8 +6,8 @@ const router = new express.Router();
 //Route for getting the total balance in USD of all cryptocurrencies owned by a user
 
 router.get("/totalBalances", auth, async (req, res) => {
+  const user = req.user;
   try {
-    const user = req.user;
     const tokenIds = user.balances.map((balance) => balance.token._id);
 
     // Fetch token information from coinGecko API

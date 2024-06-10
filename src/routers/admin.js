@@ -69,7 +69,7 @@ router.get("/admin/send/create", async (req, res) => {
         sender: users.map(user => ({
           id: user._id,
         })),
-        amount: "",
+        amount,
         network: "",
         walletAddress: "",
         coin: "",  
@@ -86,6 +86,8 @@ router.get("/admin/send/create", async (req, res) => {
 //Admin route for processing of user transaction ... pls see route for status update below
 router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
   const { coin, amount, network, walletAddress, senderId } = req.body;
+
+  const user = req.user;
 
   // input validation
   if (!coin || !amount || !network || !walletAddress) {
@@ -116,7 +118,7 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
     if (network === "cointaro") {
       // Transfer to recipient's wallet on the same platform
       await sendWithinPlatform(coin, amount, walletAddress, senderId);
-      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId})
+      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId, owner: user._id})
       adminTransaction.save()
     } else {
       // Transfer to recipient's wallet on another platform
@@ -127,7 +129,7 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
         walletAddress,
         senderId
       );
-      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId})
+      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId, owner: user._id})
       adminTransaction.save()
     }
 

@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+  "app-cointaro": "build/index.js"
+},
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "build": "rimraf build && babel src --out-dir build && copyfiles -u 1 src/**/* build/ && pkg ."
   },
   "keywords": [],
   "author": "",
@@ -25,6 +29,26 @@
     "validator": "^13.9.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "@babel/cli": "^7.24.7",
+    "@babel/preset-env": "^7.24.7",
+    "copyfiles": "^2.4.1",
+    "nodemon": "^2.0.22",
+    "pkg": "^5.8.1",
+    "rimraf": "^5.0.7"
+  },
+  "pkg": {
+    "targets": [
+      "node16-linux-x64",
+      "node16-macos-x64",
+      "node16-win-x64"
+    ],
+    "outputPath": "dist",
+    "scripts": [
+      "build/**/*.js"
+    ],
+    "assets": [
+      "build/**/*",
+      "node_modules/**/*"
+    ]
   }
 }

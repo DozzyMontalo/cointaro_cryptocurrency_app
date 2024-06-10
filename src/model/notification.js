@@ -5,18 +5,25 @@ const Schema = mongoose.Schema;
 const notificationSchema = new Schema({
   type: {
     type: String,
-    required: false,
   },
+
   message: {
     type: String,
     required: true,
   },
+  
   timestamp: {
     type: Date,
     default: Date.now,
   },
+
+  owner: {
+     type: mongoose.Schema.Types.ObjectId,
+     ref: "User"
+  }
 });
 
 const Notification = mongoose.model("Notification", notificationSchema);
 
 module.exports = Notification;
+

@@ -6,7 +6,6 @@ const messageSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   type: {
     type: String,
-    required: true,
     enum: ["Simple Earn", "add others here"],
   },
   body: {

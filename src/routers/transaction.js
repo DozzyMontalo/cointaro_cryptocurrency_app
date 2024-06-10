@@ -104,7 +104,7 @@ router.post("/send", auth, async (req, res) => {
         .send("An error occurred while saving the transaction.");
     }
 
-    // Create admin notification object with transaction ID
+    // admin notification object with transaction ID
     const adminNotification = {
       user: sender._id,
       coin,

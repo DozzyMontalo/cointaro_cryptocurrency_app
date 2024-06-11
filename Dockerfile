@@ -5,8 +5,7 @@ FROM node:14
 WORKDIR /src
 
 # Add package.json and package-lock.json to the working directory
-ADD package.json /src/package.json
-ADD package-lock.json /src/package-lock.json
+COPY package.json package-lock.json /src/
 
 # Install dependencies
 RUN npm install

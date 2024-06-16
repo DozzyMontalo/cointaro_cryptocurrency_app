@@ -86,40 +86,32 @@ router.get("/admin/send/create", async (req, res) => {
 //Admin route for processing of user transaction ... pls see route for status update below
 router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
   const { coin, amount, network, walletAddress, senderId } = req.body;
-
   const user = req.user;
 
-  // input validation
+  // Input validation
   if (!coin || !amount || !network || !walletAddress) {
-    throw new Error("Please provide all the required information.");
+    return res.status(400).send("Please provide all the required information.");
   }
 
   try {
-    try {
-      // Get the sender's user account
-      const sender = await User.findById(senderId);
-      if (!sender) {
-        throw new Error("Sender user not found");
-      }
+    // Get the sender's user account
+    const sender = await User.findById(senderId);
+    if (!sender) {
+      throw new Error("Sender user not found");
+    }
 
-      // Check if the sender has enough balance to send
-      if (
-        !sender.hasBalance(coin._id) ||
-        sender.getBalance(coin._id).value < amount
-      ) {
-        throw new Error("Insufficient balance to send");
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("An error occurred while validating the sender.");
+    // Check if the sender has enough balance to send
+    if (
+      !sender.hasBalance(coin._id) ||
+      sender.getBalance(coin._id).value < amount
+    ) {
+      throw new Error("Insufficient balance to send");
     }
 
     // Transfer the coins to the recipient's wallet address
     if (network === "cointaro") {
       // Transfer to recipient's wallet on the same platform
       await sendWithinPlatform(coin, amount, walletAddress, senderId);
-      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId, owner: user._id})
-      adminTransaction.save()
     } else {
       // Transfer to recipient's wallet on another platform
       await transferToAnotherPlatform(
@@ -129,16 +121,22 @@ router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
         walletAddress,
         senderId
       );
-      const adminTransaction = new AdminTransaction({coin, amount, walletAddress, senderId, owner: user._id})
-      adminTransaction.save()
     }
+
+    // Save the admin transaction
+    const adminTransaction = new AdminTransaction({
+      coin,
+      amount,
+      walletAddress,
+      senderId,
+      owner: user._id
+    });
+    await adminTransaction.save();
 
     res.status(200).send("Coins transferred successfully");
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .send("An error occurred while processing the send request.");
+    res.status(500).send("An error occurred while processing the send request.");
   }
 });
 

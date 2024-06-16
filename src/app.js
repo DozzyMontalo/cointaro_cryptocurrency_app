@@ -27,3 +27,4 @@ app.use("/swap", limiter);
 module.exports = app;
 
 console.log(process.env.PORT);
+console.log(process.env.MONGODB_URL)

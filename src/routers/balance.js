@@ -98,26 +98,34 @@ router.post("/transaction", auth, async (req, res) => {
 
 // Helper function to fetch token data from an external API or predefined mapping
 async function fetchTokenData(tokenIds) {
-  const response = await axios.get(
-    `https://api.coingecko.com/api/v3/tokens/markets`,
-    {
-      params: {
-        ids: tokenIds.join(","),
-        vs_currency: "usd",
-      },
-    }
-  );
+  try {
+    const response = await axios.get(
+      `https://api.coingecko.com/api/v3/tokens/markets`,
+      {
+        params: {
+          ids: tokenIds.join(","),
+          vs_currency: "usd",
+        },
+      }
+    );
 
-  // Extract relevant token data from the API response
-  const tokenData = response.data.map((token) => ({
-    id: token.id,
-    name: token.name,
-    symbol: token.symbol,
-    price: token.current_price,
-  }));
+    // Extract relevant token data from the API response
+    const tokenData = response.data.map((token) => ({
+      id: token.id,
+      name: token.name,
+      symbol: token.symbol,
+      price: token.current_price,
+    }));
 
-  return tokenData;
+    return tokenData;
+  } catch (error) {
+    console.error("Error fetching token data:", error.message);
+    // Optionally, you can throw the error or return a default value
+    throw error; // rethrowing the error so the caller can handle it
+    // or return [];
+  }
 }
+
 
 // Helper function to calculate the total balances in USD
 function calculateTotalBalanceUSD(balances, tokenData) {

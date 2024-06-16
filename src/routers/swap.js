@@ -31,7 +31,7 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
   const { fromToken, toToken, amount, walletAddress } = req.body;
   const user = req.user;
 
-  //input validation
+  // Input validation
   if (!fromToken || !toToken || !walletAddress || !amount) {
     return res.status(400).send("Please fill in all the required fields.");
   }
@@ -78,14 +78,15 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
 
     const fees = calculateTotalAmount(amount) - amount;
 
+    let admin;
     try {
-      const admin = await User.findOne({ role: admin });
+      admin = await User.findOne({ role: admin });
       if (!admin) {
         return res.status(404).send("Admin not found.");
       }
     } catch (error) {
       console.error("Error getting the admin:", error.message);
-      throw error;
+      return res.status(500).send("Error retrieving admin.");
     }
 
     // Add the swapped amount to the "TO" token balance
@@ -93,38 +94,31 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
       (balance) => balance.token === toToken
     );
     if (toTokenBalanceIndex === -1) {
-      user.balances.push({ token: toToken._id, value: amount });
+      user.balances.push({ token: toToken, value: amount });
     } else {
       user.balances[toTokenBalanceIndex].value += amount;
     }
 
     await user.save(); // Save the updated user to the database
 
-    //Add the deducted fees to admin's token balance
+    // Add the deducted fees to admin's token balance
     await admin.setBalance(
-      fromToken._id,
-      admin.getBalance(fromToken._id) + fees
+      fromToken,
+      admin.getBalance(fromToken) + fees
     );
 
-    await admin.save(); // Update the admins's balance in the database
-
-    // Return the updated balances
-    res.json({ balances: user.balances });
-
-    // Send an email notification to the admin
-    await sendEmailNotification(adminNotification);
+    await admin.save(); // Update the admin's balance in the database
 
     // Send a notification to the admin dashboard
     console.log("Admin notification:", adminNotification);
 
-    res.send(
-      "Notification sent to the admin. Transfer completed successfully."
-    );
+    // Send an email notification to the admin
+    await sendEmailNotification(adminNotification);
 
     // Create a transaction record
     const transactionData = {
       sender: user._id,
-      coin: fromToken._id,
+      coin: fromToken,
       walletAddress,
       network,
       amount,
@@ -134,11 +128,15 @@ router.post("/swap", auth, apiAuth, async (req, res) => {
     // Save the transaction record
     const transaction = new Transaction(transactionData);
     await transaction.save();
+
+    // Return the updated balances
+    return res.json({ balances: user.balances });
   } catch (error) {
     console.error("Error performing swap:", error.message);
-    throw error;
+    return res.status(500).send("An error occurred while processing the swap.");
   }
 });
+
 
 module.exports = router;
 module.exports = limiter;

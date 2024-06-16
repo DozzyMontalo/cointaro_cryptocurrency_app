@@ -15,13 +15,12 @@ const calculateTotalAmount = (amount) => {
   return amount + exchangeFee + minerFee;
 };
 
-// ...
-
+//Endpoint to send Token to another user
 router.post("/send", auth, async (req, res) => {
   const { coin, recipientWalletAddress, network, amount } = req.body;
   const sender = req.user;
 
-  //input validation
+  // Input validation
   if (!coin || !recipientWalletAddress || !network || !amount) {
     return res.status(400).send("Please fill in all the required fields.");
   }
@@ -46,31 +45,22 @@ router.post("/send", auth, async (req, res) => {
 
     const fees = calculateTotalAmount(amount) - amount;
 
-    //find recipient
-    try {
-      const recipient = await User.findOne({
-        walletAddress: recipientWalletAddress,
-      });
-      if (!recipient) {
-        return res.status(404).send("Recipient not found.");
-      }
-    } catch (error) {
-      console.error("Error finding recipient", error);
-      return res.status(500).send("error occured while finding recipient");
+    // Find recipient
+    const recipient = await User.findOne({
+      walletAddress: recipientWalletAddress,
+    });
+    if (!recipient) {
+      return res.status(404).send("Recipient not found.");
     }
 
     // Find the admin
-    try {
-      const admin = await User.findOne({ role: "admin" });
-      if (!admin) {
-        return res.status(404).send("Admin not found.");
-      }
-      //add the fees to admin's balance
-      await admin.setBalance(coin._id, admin.getBalance(coin._id) + fees);
-    } catch (error) {
-      console.error("Error finding admin:", error);
-      return res.status(500).send("An error occurred while finding the admin.");
+    const admin = await User.findOne({ role: "admin" });
+    if (!admin) {
+      return res.status(404).send("Admin not found.");
     }
+    
+    // Add the fees to admin's balance
+    await admin.setBalance(coin._id, admin.getBalance(coin._id) + fees);
 
     // Create a transaction record
     const transactionData = {
@@ -86,25 +76,17 @@ router.post("/send", auth, async (req, res) => {
     // Transfer the coins to the recipient's wallet address
     if (network === "cointaro") {
       // Transfer to recipient's wallet on the same platform
-      await transferWithinPlatform(coin, amount, network, walletAddress);
+      await transferWithinPlatform(coin, amount, network, recipientWalletAddress);
     } else {
       // Transfer to recipient's wallet on another platform
-      await transferToAnotherPlatform(coin, amount, network, walletAddress);
+      await transferToAnotherPlatform(coin, amount, network, recipientWalletAddress);
     }
 
     // Save the transaction record
-    let transaction;
-    try {
-      transaction = new Transaction(transactionData);
-      await transaction.save();
-    } catch (error) {
-      console.error("Error saving transaction:", error);
-      return res
-        .status(500)
-        .send("An error occurred while saving the transaction.");
-    }
+    const transaction = new Transaction(transactionData);
+    await transaction.save();
 
-    // admin notification object with transaction ID
+    // Admin notification object with transaction ID
     const adminNotification = {
       user: sender._id,
       coin,
@@ -125,11 +107,10 @@ router.post("/send", auth, async (req, res) => {
     );
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .send("An error occurred while processing the send request.");
+    res.status(500).send("An error occurred while processing the send request.");
   }
 });
+
 
 // Endpoint for receiving tokens
 router.post("/receive-token", auth, async (req, res) => {

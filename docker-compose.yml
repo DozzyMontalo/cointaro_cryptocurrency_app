@@ -4,7 +4,7 @@ services:
     image: app-cointaro
     restart: unless-stopped
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/cointaro
+       - MONGODB_URL=${MONGODB_URL}
     build:
       context: .
       dockerfile: Dockerfile   
@@ -12,6 +12,8 @@ services:
       - "3000:3000"
     depends_on:
       - mongo
+    networks:
+      - mynetwork  
 
   mongo:
     image: mongo:latest
@@ -19,6 +21,11 @@ services:
       - mongo-data:/data/db
     ports:
       - "27017:27017"
+    networks:
+      - mynetwork   
 
 volumes:
   mongo-data:
+
+networks:
+  mynetwork:

@@ -9,8 +9,8 @@ const { auth, isAdmin } = require("../middleware/auth");
 const platformConfig = require("../utils/PlatformConfig");
 const AdminTransaction = require("../model/Admin-transaction");
 
-//Messages Get form router
-router.get("/messages/create", async (req, res) => {
+//Get Messages form router
+router.get("/admin/messages/form", async (req, res) => {
   try {
     const users = await User.find()
 
@@ -62,7 +62,7 @@ router.post("/admin/messages", isAdmin, async (req, res) => {
 });
 
 //Get Transaction form
-router.get("/admin/send/create", async (req, res) => {
+router.get("/admin/transaction/form", async (req, res) => {
   try {
     const users = await User.find()
     // Prepare the form data for task creation
@@ -85,7 +85,7 @@ router.get("/admin/send/create", async (req, res) => {
 
 
 //Admin route for processing of user transaction ... pls see route for status update below
-router.post("/admin/user/send", auth, isAdmin, async (req, res) => {
+router.post("/admin/transaction/send", auth, isAdmin, async (req, res) => {
   const { coin, amount, network, walletAddress, senderId } = req.body;
   const user = req.user;
 
@@ -178,7 +178,7 @@ router.post("/completeTransaction/:id", auth, isAdmin, async (req, res) => {
 });
 
 //Get Task form router
-router.get("/tasks/create", async (req, res) => {
+router.get("/tasks/form", async (req, res) => {
   try {
 
     const users = await User.find()
@@ -200,7 +200,7 @@ router.get("/tasks/create", async (req, res) => {
 });
 
 // POST route to create a new Simple-Earn task and send it to a user
-router.post("/tasks", isAdmin, async (req, res) => {
+router.post("/tasks/create", isAdmin, async (req, res) => {
   const { description, recipientId } = req.body;
 
   try {
